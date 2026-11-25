@@ -20,6 +20,7 @@ import {
   turnItemCanChangeUserWait,
 } from "@t3tools/shared/agentAwareness";
 import { turnItemUpdateCanEndBackgroundWork } from "@t3tools/shared/orchestrationV2PendingBackgroundWork";
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import { makeDrainableWorker } from "@t3tools/shared/DrainableWorker";
 import { normalizeRelayIssuer, RELAY_ACTIVITY_PUBLISH_TYP } from "@t3tools/shared/relayJwt";
 import * as Cause from "effect/Cause";
@@ -503,6 +504,9 @@ export const make = Effect.gen(function* () {
   });
 
   const publishThreadUnsafe = Effect.fn("publishThreadUnsafe")(function* (threadId: ThreadId) {
+    if (!FORK_COMPLIANCE.allowCloudRelay) {
+      return;
+    }
     const publishAgentActivity = yield* readPublishAgentActivityEnabled;
     if (!publishAgentActivity) {
       yield* cancelPublishRetries;
@@ -950,6 +954,9 @@ export const make = Effect.gen(function* () {
 
   const start: AgentAwarenessRelay["Service"]["start"] = Effect.fn("AgentAwarenessRelay.start")(
     function* () {
+      if (!FORK_COMPLIANCE.allowCloudRelay) {
+        return;
+      }
       const [relayConfig, publishEnabled] = yield* Effect.all([
         readRelayConfig.pipe(Effect.orElseSucceed(() => null)),
         readPublishAgentActivityEnabled.pipe(Effect.orElseSucceed(() => false)),

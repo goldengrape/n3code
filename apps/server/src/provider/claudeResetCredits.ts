@@ -3,6 +3,7 @@ import type {
   ServerProviderResetCreditOption,
   ServerProviderResetCredits,
 } from "@t3tools/contracts";
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -209,6 +210,7 @@ const withClaudeHeaders = (token: string, version: string) =>
 
 export const readClaudeResetCredits = Effect.fn("readClaudeResetCredits")(
   function* (configDir: string, version: string) {
+    if (!FORK_COMPLIANCE.allowUndocumentedProviderProbes) return undefined;
     const token = yield* readAccessToken(configDir);
     if (!token) return undefined;
     const client = yield* HttpClient.HttpClient;
@@ -264,6 +266,9 @@ export const consumeClaudeResetCredit = Effect.fn("consumeClaudeResetCredit")(fu
   readonly grantId: string;
   readonly requestId: string;
 }) {
+  if (!FORK_COMPLIANCE.allowUndocumentedProviderProbes) {
+    return yield* new ClaudeResetCreditError({ reason: "requestFailed" });
+  }
   if (!GRANT_ID.test(input.grantId) || !REQUEST_ID.test(input.requestId)) {
     return yield* new ClaudeResetCreditError({ reason: "malformedCredit" });
   }

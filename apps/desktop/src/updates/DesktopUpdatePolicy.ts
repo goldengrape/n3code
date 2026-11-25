@@ -10,6 +10,7 @@ import {
   type ManagedPolicyDocument,
   type ManagedUpdatesMode,
 } from "@t3tools/contracts";
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
@@ -30,9 +31,9 @@ export class DesktopUpdatePolicy extends Context.Service<DesktopUpdatePolicy, Up
 ) {}
 
 export const unmanagedUpdatePolicy: UpdatePolicy = {
-  mode: "auto",
+  mode: FORK_COMPLIANCE.allowAutoUpdateChecks ? "auto" : "off",
   feedUrl: undefined,
-  allowNightly: true,
+  allowNightly: FORK_COMPLIANCE.allowAutoUpdateChecks,
   message: null,
 };
 

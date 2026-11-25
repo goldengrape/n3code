@@ -1,4 +1,5 @@
 import type { ServerProviderUsageWindow } from "@t3tools/contracts";
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -162,6 +163,16 @@ export const readGrokAccount = Effect.fn("readGrokAccount")(function* (
   environment: NodeJS.ProcessEnv = process.env,
 ) {
   const checkedAt = DateTime.formatIso(yield* DateTime.now);
+  if (!FORK_COMPLIANCE.allowUndocumentedProviderProbes) {
+    return {
+      email: undefined,
+      usageLimits: makeUnavailableUsageLimits({
+        checkedAt,
+        reason: "unsupported",
+        message: "Grok usage-limit probing is disabled by fork compliance policy.",
+      }),
+    };
+  }
   const probeFailed = makeUnavailableUsageLimits({
     checkedAt,
     reason: "probeFailed",

@@ -1,3 +1,4 @@
+.github/workflows/release-n3code.yml
 apps/mobile/src/components/M3Wordmark.tsx
 apps/mobile/src/features/settings/SettingsInferenceRouteScreen.tsx
 apps/mobile/src/features/threads/ThreadLastInferenceRequest.tsx
@@ -61,6 +62,7 @@ apps/web/src/hooks/useAddProjectAtPath.test.ts
 apps/web/src/hooks/useAddProjectAtPath.ts
 apps/web/src/routes/_chat.settings.inference.tsx
 apps/web/src/state/inference.ts
+docs/compliance-report.md
 docs/local-model-improvement-plan.md
 docs/user/encrypted-remote-control.md
 docs/user/local-models.md
@@ -117,6 +119,8 @@ packages/provider-pi/src/server/flavor.ts
 packages/provider-pi/src/server/gateway.ts
 packages/provider-pi/src/server/gatewayExtensionSource.ts
 packages/shared/src/errorTag.ts
+packages/shared/src/forkCompliance.test.ts
+packages/shared/src/forkCompliance.ts
 packages/shared/src/socketE2ee.test.ts
 packages/shared/src/socketE2ee.ts
 scripts/check-fork-invariants.sh

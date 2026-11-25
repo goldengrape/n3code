@@ -1,3 +1,4 @@
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import { relayClerkTokenOptions } from "@t3tools/shared/relayAuth";
 import { normalizeSecureRelayUrl } from "@t3tools/shared/relayUrl";
 import * as Schema from "effect/Schema";
@@ -36,7 +37,7 @@ export function resolveCloudPublicConfig(): CloudPublicConfig {
 }
 
 export function hasCloudPublicConfig(): boolean {
-  return false;
+  return FORK_COMPLIANCE.allowCloudRelay;
 }
 
 export function resolveRelayClerkTokenOptions() {

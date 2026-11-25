@@ -1,4 +1,5 @@
 import type { EnvironmentId, UnifiedSettings } from "@t3tools/contracts";
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import { T, useGT, Var } from "gt-react";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
@@ -44,10 +45,12 @@ export function UsageProviderSettings({
         headerAction={
           !readOnly ? (
             <div className="flex gap-2">
-              <Button size="xs" variant="outline" onClick={() => setAdding("cliproxy")}>
-                <PlusIcon className="size-3" aria-hidden />
-                <T>Add hub</T>
-              </Button>
+              {FORK_COMPLIANCE.allowCliproxyUsageHub ? (
+                <Button size="xs" variant="outline" onClick={() => setAdding("cliproxy")}>
+                  <PlusIcon className="size-3" aria-hidden />
+                  <T>Add hub</T>
+                </Button>
+              ) : null}
               <Button size="xs" variant="outline" onClick={() => setAdding("http")}>
                 <PlusIcon className="size-3" aria-hidden />
                 <T>Add HTTP source</T>

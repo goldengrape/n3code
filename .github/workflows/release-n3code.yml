@@ -1,0 +1,161 @@
+name: Release n3code (Ubuntu & Win11)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.11-n3.1). Leave empty to auto-generate."
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*-n3*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-n3code-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Resolve release tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Verify fork compliance invariants
+        run: bash scripts/check-fork-invariants.sh
+
+      - name: Compute tag and version
+        id: meta
+        run: |
+          base_ver=$(node -p 'require("./apps/desktop/package.json").version')
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref_type }}" == "tag" ]]; then
+            tag="${{ github.ref_name }}"
+          elif [[ -n "${{ inputs.tag }}" ]]; then
+            tag="${{ inputs.tag }}"
+          else
+            tag="v${base_ver}-n3.$(date -u +%Y%m%d%H%M)"
+          fi
+          ver="${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+
+  build_ubuntu:
+    name: Build Ubuntu (x64 .deb & .AppImage)
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-ci-deps
+        with:
+          install-args: --filter=@t3tools/desktop... --filter=t3... --filter=@t3tools/scripts...
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Build Linux desktop artifacts
+        run: |
+          vp run dist:desktop:artifact \
+            --platform linux \
+            --target AppImage \
+            --arch x64 \
+            --build-version "${{ needs.prepare.outputs.version }}" \
+            --verbose
+
+      - name: Upload Ubuntu artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-x64
+          path: |
+            release/*.deb
+            release/*.AppImage
+          if-no-files-found: error
+
+  build_win11:
+    name: Build Windows 11 (x64 NSIS .exe)
+    needs: prepare
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-ci-deps
+        with:
+          install-args: --filter=@t3tools/desktop... --filter=t3... --filter=@t3tools/scripts...
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Build Windows desktop artifacts
+        shell: bash
+        run: |
+          vp run dist:desktop:artifact \
+            --platform win \
+            --target nsis \
+            --arch x64 \
+            --build-version "${{ needs.prepare.outputs.version }}" \
+            --verbose
+
+      - name: Upload Windows 11 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: win11-x64
+          path: |
+            release/*.exe
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    needs: [prepare, build_ubuntu, build_win11]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download Ubuntu artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ubuntu-x64
+          path: dist-release
+
+      - name: Download Windows 11 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: win11-x64
+          path: dist-release
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          ls -lh dist-release/
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist-release/* --clobber
+          else
+            gh release create "$TAG" dist-release/* \
+              --title "n3code ${TAG}" \
+              --notes "Compliance-hardened, Tailscale-only desktop build for Ubuntu (x64 .deb / .AppImage) and Windows 11 (x64 .exe). See \`docs/compliance-report.md\` for full compliance & privacy details."
+          fi

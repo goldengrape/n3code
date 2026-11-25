@@ -12,6 +12,7 @@ import {
   type UsageLimitSourceSnapshot,
 } from "@t3tools/contracts";
 import { resolveServerBackgroundActivitySettings } from "@t3tools/shared/backgroundActivitySettings";
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import { antigravityWindowLimitsModel, hubRoutes } from "@t3tools/shared/usageLimits";
 import * as Context from "effect/Context";
 import * as DateTime from "effect/DateTime";
@@ -192,6 +193,13 @@ export const make = Effect.gen(function* () {
         ? { ...base, accounts: [], quotaAccounts: result.success.accounts }
         : { ...base, accounts: [], error: "Could not read the HTTP quota source." };
     }
+    if (!FORK_COMPLIANCE.allowCliproxyUsageHub) {
+      return {
+        ...base,
+        accounts: [],
+        error: "CLIProxyAPI usage sources are disabled by fork compliance policy.",
+      };
+    }
     if (managementKey.length === 0) {
       return { ...base, accounts: [], error: missingManagementKey(config) };
     }
@@ -239,6 +247,11 @@ export const make = Effect.gen(function* () {
       Effect.mapError(() => new UsageLimitSourceError({ detail: "Could not read hub settings." })),
     );
     const config = settings.usageLimitSources[input.sourceId];
+    if (!FORK_COMPLIANCE.allowCliproxyUsageHub) {
+      return yield* new UsageLimitSourceError({
+        detail: "CLIProxyAPI usage sources are disabled by fork compliance policy.",
+      });
+    }
     if (!config?.enabled || config.kind !== "cliproxy") {
       return yield* new UsageLimitSourceError({
         detail: "The usage limit source is missing or disabled.",

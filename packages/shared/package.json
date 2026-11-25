@@ -3,6 +3,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./forkCompliance": {
+      "types": "./src/forkCompliance.ts",
+      "import": "./src/forkCompliance.ts"
+    },
     "./errorTag": {
       "types": "./src/errorTag.ts",
       "import": "./src/errorTag.ts"

@@ -1,4 +1,5 @@
 import type { RelayManagedEndpointRuntimeConfig } from "@t3tools/contracts/relay";
+import { FORK_COMPLIANCE } from "@t3tools/shared/forkCompliance";
 import { RotatingFileSink, RotatingFileSinkError } from "@t3tools/shared/logging";
 import * as HostProcess from "@t3tools/shared/HostProcess";
 import * as RelayClient from "@t3tools/shared/relayClient";
@@ -729,11 +730,11 @@ export const make = Effect.gen(function* () {
   };
 
   reconcileConfig = Effect.fn("CloudManagedEndpointRuntime.reconcileConfig")(function* (config) {
-    if (!config || config.providerKind !== "cloudflare_tunnel") {
+    if (!FORK_COMPLIANCE.allowCloudRelay || !config || config.providerKind !== "cloudflare_tunnel") {
       yield* stopActive;
-      return config
-        ? { status: "unsupported", providerKind: config.providerKind }
-        : { status: "disabled" };
+      return !FORK_COMPLIANCE.allowCloudRelay || !config
+        ? { status: "disabled" }
+        : { status: "unsupported", providerKind: config.providerKind };
     }
 
     const nextConfigKey = runtimeConfigKey(config);
