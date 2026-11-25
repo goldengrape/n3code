@@ -68,6 +68,9 @@ jobs:
         with:
           targets: x86_64-unknown-linux-gnu
 
+      - name: Install Linux desktop build prerequisites
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev pkg-config imagemagick
+
       - name: Build Linux desktop artifacts
         run: |
           vp run dist:desktop:artifact \
